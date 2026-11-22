@@ -1,0 +1,15 @@
+# Assessment subset: IDT panel, site ST04, 25 ng input (SRP296025)
+# IDT has no 1:124 (Sample F) or AcroMetrix (AC01) libraries, so:
+#   1:24 dilution  -> SampleEfIS (Lbx-low, 4% A), 3 replicates
+#   1:124 stand-in -> SampleDfIS (1:4, Lbx-high, 20% A), 2 replicates: extends the VAF range upward
+#   AC01 stand-in  -> SampleBfIS LIB3 (the background AC01 is made from), held-out negative control (vaf_scale 0)
+#   SampleBfIS LIB1-2 -> panel of normals for background polishing
+sample	srr	fq1	fq2	truth	vaf_scale	role
+SampleEfIS_IDT2_ST04_25ng_LIB1	SRR13208858			seqc2_pool	0.04	test
+SampleEfIS_IDT2_ST04_25ng_LIB2	SRR13208857			seqc2_pool	0.04	test
+SampleEfIS_IDT2_ST04_25ng_LIB3	SRR13208856			seqc2_pool	0.04	test
+SampleDfIS_IDT2_ST04_25ng_LIB1	SRR13208828			seqc2_pool	0.2	test
+SampleDfIS_IDT2_ST04_25ng_LIB2	SRR13208817			seqc2_pool	0.2	test
+SampleBfIS_IDT2_ST04_25ng_LIB3	SRR13208850			seqc2_pool	0	test
+SampleBfIS_IDT2_ST04_25ng_LIB1	SRR13208862					normal
+SampleBfIS_IDT2_ST04_25ng_LIB2	SRR13208861					normal

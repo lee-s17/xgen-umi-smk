@@ -1,0 +1,13 @@
+channels: [conda-forge, bioconda]
+dependencies:
+  - fgbio>=4.1
+  - openjdk=17
+  - bwa-mem2=2.3
+  - samtools>=1.19
+  - fastp>=0.23
+  - fastqc
+  - multiqc>=1.21
+  - mosdepth>=0.3.6
+  - bedtools
+  - sra-tools>=3.0
+  - pigz

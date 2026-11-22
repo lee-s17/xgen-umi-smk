@@ -1,0 +1,9 @@
+# snakemake --profile profiles/local
+cores: 24
+# set to (total RAM - ~12 GB) so the desktop session is never squeezed out; check with: free -g
+resources: [mem_mb=48000]
+software-deployment-method: conda   # Snakemake >=8; use "use-conda: true" on v7
+rerun-incomplete: true
+keep-going: true
+printshellcmds: true
+rerun-triggers: mtime

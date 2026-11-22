@@ -1,0 +1,40 @@
+# pipeline outputs and logs
+results/
+.snakemake/
+logs/
+
+# large or licensed inputs: fetch from SRA / figshare (see README)
+resources/ref/
+resources/truth/
+resources/bed/
+resources/liftover/
+resources/spikein/
+resources/idt2/
+*.fa
+*.fna
+*.fasta
+*.fai
+*.dict
+*.bwt.2bit.64
+*.0123
+*.amb
+*.ann
+*.pac
+
+# sequence and variant data
+*.fastq
+*.fastq.gz
+*.fq.gz
+*.bam
+*.bai
+*.cram
+*.vcf
+*.vcf.gz
+*.tbi
+*.bcf
+
+# python / editors
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store

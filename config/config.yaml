@@ -1,0 +1,107 @@
+samples: config/samples.tsv
+outdir: results
+
+# point this at your GRCh38 no-alt FASTA (bwa-mem2 index, .fai and .dict sit next to it)
+ref: resources/ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+# figshare 19092086 - use the hg38 IDT panel BED (liftOver if only hg19 is supplied)
+panel_bed: resources/bed/LBx_IDT_liftover_hg38.bed
+# optional SEQC2 known-negative regions; empty = every non-truth call in target counts as FP
+negative_bed: "resources/truth/KnownNegatives_hg38.bed.gz"
+
+# IDT xGen duplex adapters: 3 bp UMI + 2 bp skip on each read.
+# "+T" (not 146T) because fastp 3' trimming makes read lengths variable.
+read_structure: "3M2S+T 3M2S+T"
+
+# FastQC on raw reads. true for a run from scratch; set false when restarting from BAMs
+# (resume_from_bams: true), since the raw FASTQs are temporary and already deleted
+run_fastqc: true
+
+# true when restarting from existing grouped/consensus BAMs (run with --allowed-rules, see README)
+resume_from_bams: false
+
+fastp:
+  extra: >-
+    --detect_adapter_for_pe --cut_tail --cut_tail_mean_quality 20
+    --trim_poly_g --length_required 50 --dont_eval_duplication
+
+group:
+  strategy: paired   # duplex-aware: AAA-CCC on one strand == CCC-AAA on the other
+  edits: 0           # 3 bp UMIs: 1 edit merges 9/63 neighbours per half -> over-collapsing
+  min_map_q: 20
+
+consensus:
+  mode: duplex       # duplex | simplex
+  error_rate_pre_umi: 45
+  error_rate_post_umi: 30
+  min_input_base_quality: 20
+
+filter:
+  min_base_quality: 30       # consensus bases below this are masked to N
+  max_base_error_rate: 0.1
+  max_read_error_rate: 0.025
+  max_no_calls: 0.2        # fgbio 4.x: --max-no-calls (was --max-no-call-fraction); check --help for fraction vs count
+
+# Family-size stringency sweep. min_reads = "M AB BA" (total, larger strand, smaller strand).
+# One consensus pass is shared; each level only re-runs filter/clip/call (cheap).
+# min_alt = consensus reads (molecules) required to support the ALT allele.
+filter_levels:
+  ss1:           {min_reads: "1 1 0", min_alt: 3}   # any family incl. singletons
+  ss3:           {min_reads: "3 3 0", min_alt: 2}   # single-strand, >=3 reads
+  duplex:        {min_reads: "2 1 1", min_alt: 2}   # both strands observed
+  duplex_strict: {min_reads: "6 3 3", min_alt: 1}   # >=3 reads per strand
+
+caller: vardict      # vardict | mutect2
+
+vardict:
+  min_af: 0.0005
+  min_bq: 25
+  min_mq: 20
+  extra: ""
+
+mutect2:
+  callable_depth: 10
+  min_af: 0.0005
+  extra: ""
+
+variant_filter:
+  min_dp: 100
+  min_af: 0.0005
+  # strand bias is not informative on duplex consensus reads (each read already merges both strands)
+  drop_caller_filters: [Bias]
+
+# Optional ctDNA enrichment (INVAR): drop consensus templates longer than max_tlen bp.
+# 0 = off. ~150-166 keeps mono-nucleosomal, ctDNA-enriched fragments but costs molecules;
+# run as a separate outdir and compare.
+fragment:
+  max_tlen: 0
+
+# Background polishing (iDES). Samples with role=normal in samples.tsv are the panel of
+# normals; each call is tested (binomial) against the pooled per-site error at that level.
+background:
+  alpha: 0.01
+  min_normal_depth: 50     # below this the site keeps the error_floor only
+  error_floor: 0.00005     # per-base floor (5e-5) so an unobserved error is never rate 0
+  max_normal_af: 0.01      # allele at >=1% in pooled normals = germline (Sample B) or spike-in -> FILTER PoN
+  min_mq: 20
+  min_bq: 30
+
+# Tumour-informed mode (Signatera / INVAR): genotype truth loci directly.
+informed:
+  min_alt_molecules: 2     # per-locus detection: >= this many consensus ALT molecules
+  min_loci_detected: 2     # Signatera-style sample call: >= this many loci detected
+  alpha: 0.01              # INVAR-style aggregate: Poisson p-value of total ALT vs background
+
+benchmark:
+  vaf_bins: [0, 0.001, 0.0025, 0.005, 0.01, 0.02, 0.05, 1.0]
+
+# af_tag: INFO tag carrying VAF in the undiluted truth sample; leave "" to use default_vaf
+truth_sets:
+  seqc2_pool:
+    vcf: resources/truth/KnownPositives_hg19ToHg38.vcf.gz
+    af_tag: VAF
+    default_vaf: ""
+  # optional second truth set, e.g. for libraries spiked with AcroMetrix hotspot controls
+  # acrometrix:
+  #   vcf: resources/truth/AcroMetrix_hotspot.hg38.vcf.gz
+  #   af_tag: ""
+  #   default_vaf: 0.001
